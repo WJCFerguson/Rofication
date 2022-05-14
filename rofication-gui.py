@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-import sys
 import re
 import socket
 import struct
 import subprocess
+
 import jsonpickle
 from gi.repository import GLib
-from enum import Enum
-from msg import Msg,Urgency
+
+from msg import Urgency
+
 
 def linesplit(socket):
     buffer = socket.recv(16)
@@ -27,8 +28,8 @@ def linesplit(socket):
     if buffer:
         yield buffer
 
-msg = """<span font-size='small'><i>Alt+s</i>:    Dismiss notification.    <i>Alt+Enter</i>:      Mark notification seen.\n"""
-msg += """<i>Alt+r</i>:    Reload                   <i>Alt+a</i>:          Delete application notification</span>""";
+msg = """<span font-size='small'><i>Super+s</i>:    Dismiss notification.  <i>Super+Enter</i>:  Mark notification seen.\n"""
+msg += """<i>Super+r</i>:    Reload                             <i>Super+a</i>:          Delete application notification</span>""";
 rofi_command = [ 'rofi' , '-dmenu', '-p', 'Notifications:', '-markup', '-mesg', msg]
 
 def strip_tags(value):
@@ -36,10 +37,10 @@ def strip_tags(value):
   return re.sub(r'<[^>]*?>', '', value)
 
 def call_rofi(entries, additional_args=[]):
-    additional_args.extend([ '-kb-custom-1', 'Alt+s',
-                             '-kb-custom-2', 'Alt+Return',
-                             '-kb-custom-3', 'Alt+r',
-                             '-kb-custom-4', 'Alt+a',
+    additional_args.extend([ '-kb-custom-1', 'Super+s',
+                             '-kb-custom-2', 'Super+Return',
+                             '-kb-custom-3', 'Super+r',
+                             '-kb-custom-4', 'Super+a',
                              '-markup-rows',
                              '-sep', '\3',
                              '-format', 'i',
