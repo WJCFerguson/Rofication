@@ -71,7 +71,8 @@ def send_command(cmd):
 
 
 did = None
-cont=True
+cont = True
+first_time = True
 while cont:
     cont=False
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
@@ -108,6 +109,10 @@ while cont:
         args.append("-a")
         args.append(",".join(low))
 
+    if not (first_time or entries):
+        break
+    first_time = False
+
     # Select previous selected row.
     if did != None:
         args.append("-selected-row")
@@ -124,7 +129,8 @@ while cont:
         send_command("saw:{mid}".format(mid=ids[did].mid))
         cont=True
     elif did != None and code == 12:
-        cont=True
+        first_time = True
+        cont = True
     elif did != None and code == 13:
         send_command("dela:{app}".format(app=ids[did].application))
         cont=True
