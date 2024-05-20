@@ -14,7 +14,6 @@ class Msg():
         self.summary=""
         self.body=""
         self.application="n/a"
-        self.app_icon=""
         self.urgency=int(Urgency.normal)
         pass
 
