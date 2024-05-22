@@ -51,7 +51,7 @@ def call_rofi(entries, additional_args=[]):
     proc = subprocess.Popen(rofi_command+ additional_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     for e in entries:
         proc.stdin.write((e).encode('utf-8'))
-        proc.stdin.write(struct.pack('B', 0))
+        proc.stdin.write(struct.pack('B', 3))
     proc.stdin.close()
     answer = proc.stdout.read().decode("utf-8")
     exit_code = proc.wait()
