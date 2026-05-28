@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
-import jsonpickle
 import dbus
 import dbus.service
 import dbus.mainloop.glib
-from gi.repository import GObject, GLib
+from gi.repository import GLib
+import json
 import os
-import subprocess
-import sys
+import socket
 import threading
 import time
-import socket
-import json
 
 from msg import Msg, Urgency
 
@@ -31,18 +28,24 @@ allowed_expire_app = []
 
 class Rofication(threading.Thread):
 
+    CACHE_DIR = os.path.join(
+        os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")), "rofication"
+    )
+    QUEUE_FILE = os.path.join(CACHE_DIR, "not.json")
+
     def __init__(self):
         self.socket_path = "/tmp/rofi_notification_daemon"
         self.notification_queue_lock = threading.Lock()
         self.notification_queue = []
         self.last_id = 0
+        os.makedirs(self.CACHE_DIR, exist_ok=True)
         super().__init__()
 
     def load(self):
         print("Loading rofication")
         try:
-            with open("not.json", "r") as f:
-                self.notification_queue = jsonpickle.decode(f.read())
+            with open(self.QUEUE_FILE, "r") as f:
+                self.notification_queue = [Msg.from_dict(d) for d in json.load(f)]
         except Exception:
             pass
 
@@ -55,8 +58,8 @@ class Rofication(threading.Thread):
     def save(self):
         print("Saving rofication")
         try:
-            with open("not.json", "w") as f:
-                f.write(jsonpickle.encode(self.notification_queue))
+            with open(self.QUEUE_FILE, "w") as f:
+                json.dump([n.to_dict() for n in self.notification_queue], f)
         except Exception:
             print("Failed to store queue.")
 
@@ -106,7 +109,7 @@ class Rofication(threading.Thread):
         with self.notification_queue_lock:
             i = 0
             for noti in self.notification_queue:
-                connection.send(bytes(jsonpickle.encode(noti), "utf-8"))
+                connection.send(bytes(json.dumps(noti.to_dict()), "utf-8"))
                 connection.send(b"\n")
                 i += 1
 
