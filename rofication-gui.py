@@ -115,7 +115,7 @@ while cont:
                 mst += "\n<i>{}</i>".format(
                     GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
                 )
-            if len(msg.app_icon) > 0:
+            if getattr(msg, "app_icon", "") and len(msg.app_icon) > 0:
                 mst += "\0icon\x1f{app_icon}".format(app_icon=msg.app_icon)
 
             entries.append(mst)

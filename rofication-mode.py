@@ -71,7 +71,7 @@ def print_entries():
                     GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
                 )
             mst += "\0info\x1f{id}".format(id=msg.mid)
-            if len(msg.app_icon) > 0:
+            if getattr(msg, "app_icon", "") and len(msg.app_icon) > 0:
                 mst += "\x1ficon\x1f{app_icon}".format(app_icon=msg.app_icon)
             if Urgency(msg.urgency) is Urgency.critical:
                 mst += "\x1furgent\x1ftrue"
