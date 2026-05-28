@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-import dbus
-import dbus.service
-import dbus.mainloop.glib
-from gi.repository import GLib
 import json
 import os
 import socket
 import threading
 import time
 
+import dbus
+import dbus.mainloop.glib
+import dbus.service
+from gi.repository import GLib
+
 from msg import SOCKET_PATH, Msg, Urgency
 
+# pyright: standard
 event = threading.Event()
 
 
@@ -211,8 +213,10 @@ class Rofication(threading.Thread):
 
 
 class NotificationFetcher(dbus.service.Object):
-    _id = 0
-    _rofication = None
+    def __init__(self, bus, path, rofication, start_id=0):
+        super().__init__(bus, path)
+        self._rofication = rofication
+        self._id = start_id
 
     @dbus.service.method(
         "org.freedesktop.Notifications", in_signature="susssasa{ss}i", out_signature="u"
@@ -280,12 +284,13 @@ if __name__ == "__main__":
     dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
     session_bus = dbus.SessionBus()
     name = dbus.service.BusName("org.freedesktop.Notifications", session_bus)
-    nf = NotificationFetcher(session_bus, "/org/freedesktop/Notifications")
-
-    nf._rofication = rofication
-
     rofication.load()
-    nf._id = rofication.last_id
+    nf = NotificationFetcher(
+        session_bus,
+        "/org/freedesktop/Notifications",
+        rofication,
+        rofication.last_id,
+    )
 
     # Thread handling sockets.
     rofication.start()
