@@ -1,6 +1,13 @@
+import os
 import re
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from enum import IntEnum
+
+SOCKET_PATH = os.path.join(
+    os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}"),
+    "rofication",
+    "daemon.sock",
+)
 
 
 class Urgency(IntEnum):

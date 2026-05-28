@@ -2,8 +2,10 @@
 import socket
 import sys
 
+from msg import SOCKET_PATH
+
 client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-client.connect("/tmp/rofi_notification_daemon")
+client.connect(SOCKET_PATH)
 client.sendall(bytes("num", "utf-8"))
 
 val = client.recv(32)

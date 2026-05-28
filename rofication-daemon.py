@@ -9,7 +9,7 @@ import socket
 import threading
 import time
 
-from msg import Msg, Urgency
+from msg import SOCKET_PATH, Msg, Urgency
 
 event = threading.Event()
 
@@ -34,7 +34,8 @@ class Rofication(threading.Thread):
     QUEUE_FILE = os.path.join(CACHE_DIR, "not.json")
 
     def __init__(self):
-        self.socket_path = "/tmp/rofi_notification_daemon"
+        self.socket_path = SOCKET_PATH
+        os.makedirs(os.path.dirname(self.socket_path), exist_ok=True)
         self.notification_queue_lock = threading.Lock()
         self.notification_queue = []
         self.last_id = 0
@@ -201,7 +202,7 @@ class Rofication(threading.Thread):
                 if event.is_set():
                     break
         server.close()
-        os.unlink("/tmp/rofi_notification_daemon")
+        os.unlink(self.socket_path)
 
 
 """

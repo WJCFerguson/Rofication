@@ -6,7 +6,7 @@ import subprocess
 
 from gi.repository import GLib
 
-from msg import Msg, Urgency, linesplit, strip_tags
+from msg import SOCKET_PATH, Msg, Urgency, linesplit, strip_tags
 
 
 msg = """<span font-size='small'><i>Super+s</i>:    Dismiss notification.  <i>Super+Enter</i>:  Mark notification seen.\n"""
@@ -58,7 +58,7 @@ def call_rofi(entries, additional_args=[]):
 
 def send_command(cmd):
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect("/tmp/rofi_notification_daemon")
+    client.connect(SOCKET_PATH)
     print("Send: {cmd}".format(cmd=cmd))
     client.send(bytes(cmd, "utf-8"))
     client.close()
@@ -70,7 +70,7 @@ first_time = True
 while cont:
     cont = False
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect("/tmp/rofi_notification_daemon")
+    client.connect(SOCKET_PATH)
     client.send(b"list", 4)
     ids = []
     entries = []

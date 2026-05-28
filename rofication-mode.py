@@ -6,19 +6,19 @@ import sys
 
 from gi.repository import GLib
 
-from msg import Msg, Urgency, linesplit, strip_tags
+from msg import SOCKET_PATH, Msg, Urgency, linesplit, strip_tags
 
 
 def send_command(cmd):
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect("/tmp/rofi_notification_daemon")
+    client.connect(SOCKET_PATH)
     client.send(bytes(cmd, "utf-8"))
     client.close()
 
 
 def print_entries():
     client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect("/tmp/rofi_notification_daemon")
+    client.connect(SOCKET_PATH)
     client.send(b"list", 4)
     entries = []
     urgent = []
