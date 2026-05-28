@@ -1,38 +1,12 @@
 #!/usr/bin/env python3
-import sys
-import re
+import json
 import os
 import socket
-import struct
-import subprocess
-import jsonpickle
+import sys
+
 from gi.repository import GLib
-from enum import Enum
-from msg import Msg, Urgency
 
-
-def linesplit(socket):
-    buffer = socket.recv(16)
-    buffer = buffer.decode("UTF-8")
-    buffering = True
-    while buffering:
-        if "\n" in buffer:
-            (line, buffer) = buffer.split("\n", 1)
-            yield line
-        else:
-            more = socket.recv(16)
-            more = more.decode("UTF-8")
-            if not more:
-                buffering = False
-            else:
-                buffer += more
-    if buffer:
-        yield buffer
-
-
-def strip_tags(value):
-    "Return the given HTML with all tags stripped."
-    return re.sub(r"<[^>]*?>", "", value)
+from msg import Msg, Urgency, linesplit, strip_tags
 
 
 def send_command(cmd):
@@ -61,7 +35,7 @@ def print_entries():
     sys.stdout.flush()
     for a in linesplit(client):
         if len(a) > 0:
-            msg = jsonpickle.decode(a)
+            msg = Msg.from_dict(json.loads(a))
             mst = "<b>{summ}</b> <small>({app})</small>".format(
                 summ=GLib.markup_escape_text(strip_tags(msg.summary)),
                 app=GLib.markup_escape_text(strip_tags(msg.application)),
@@ -71,7 +45,7 @@ def print_entries():
                     GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
                 )
             mst += "\0info\x1f{id}".format(id=msg.mid)
-            if getattr(msg, "app_icon", "") and len(msg.app_icon) > 0:
+            if msg.app_icon:
                 mst += "\x1ficon\x1f{app_icon}".format(app_icon=msg.app_icon)
             if Urgency(msg.urgency) is Urgency.critical:
                 mst += "\x1furgent\x1ftrue"

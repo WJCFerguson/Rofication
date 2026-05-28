@@ -1,42 +1,17 @@
 #!/usr/bin/env python3
-import re
+import json
 import socket
 import struct
 import subprocess
 
-import jsonpickle
 from gi.repository import GLib
 
-from msg import Urgency
-
-
-def linesplit(socket):
-    buffer = socket.recv(16)
-    buffer = buffer.decode("UTF-8")
-    buffering = True
-    while buffering:
-        if "\n" in buffer:
-            (line, buffer) = buffer.split("\n", 1)
-            yield line
-        else:
-            more = socket.recv(16)
-            more = more.decode("UTF-8")
-            if not more:
-                buffering = False
-            else:
-                buffer += more
-    if buffer:
-        yield buffer
+from msg import Msg, Urgency, linesplit, strip_tags
 
 
 msg = """<span font-size='small'><i>Super+s</i>:    Dismiss notification.  <i>Super+Enter</i>:  Mark notification seen.\n"""
 msg += """<i>Super+r</i>:    Reload                             <i>Super+a</i>:          Delete application notification</span>"""
 rofi_command = ["rofi", "-dmenu", "-p", "Notifications:", "-markup", "-mesg", msg]
-
-
-def strip_tags(value):
-    "Return the given HTML with all tags stripped."
-    return re.sub(r"<[^>]*?>", "", value)
 
 
 def call_rofi(entries, additional_args=[]):
@@ -105,7 +80,7 @@ while cont:
     args = []
     for a in linesplit(client):
         if len(a) > 0:
-            msg = jsonpickle.decode(a)
+            msg = Msg.from_dict(json.loads(a))
             ids.append(msg)
             mst = "<b>{summ}</b> <small>({app})</small>".format(
                 summ=GLib.markup_escape_text(strip_tags(msg.summary)),
@@ -115,7 +90,7 @@ while cont:
                 mst += "\n<i>{}</i>".format(
                     GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
                 )
-            if getattr(msg, "app_icon", "") and len(msg.app_icon) > 0:
+            if msg.app_icon:
                 mst += "\0icon\x1f{app_icon}".format(app_icon=msg.app_icon)
 
             entries.append(mst)
