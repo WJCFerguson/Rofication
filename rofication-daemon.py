@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import json
 import os
+import signal
 import socket
 import threading
 import time
@@ -297,17 +298,19 @@ if __name__ == "__main__":
         rofication.last_id,
     )
 
-    # Thread handling sockets.
     rofication.start()
-    ##
-    # Create Glib mainloop, this is needed to make dbus work.
-    # GMainLoop also takes care for catching signals.
-    ##
+
+    mainloop = GLib.MainLoop()
+
+    def shutdown(signum, frame):
+        mainloop.quit()
+
+    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, shutdown)
+
     try:
-        GLib.MainLoop().run()
-    except:
-        # Set event telling it to quit.
+        mainloop.run()
+    finally:
         event.set()
-    # Join unix socket thread.
-    rofication.join()
-    rofication.save()
+        rofication.join()
+        rofication.save()
