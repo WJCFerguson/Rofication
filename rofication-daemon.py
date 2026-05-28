@@ -163,48 +163,53 @@ class Rofication(threading.Thread):
             connection.send(bytes(mstr, "utf-8"))
 
     def run(self):
-        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        server.bind(self.socket_path)
-        server.listen(1)
-        server.settimeout(1)
-        while 1:
-            try:
-                connection, client_address = server.accept()
-                self.update_queue()
-                try:
-                    data = connection.recv(1024).decode("utf-8")
-                    command = data.split(":")[0]
+        # Remove stale socket from a previous unclean shutdown
+        if os.path.exists(self.socket_path):
+            os.unlink(self.socket_path)
 
-                    # Get number of notifications
-                    if command == "num":
-                        self.communication_command_num(connection)
-                    # Getting a listing.
-                    elif command == "list":
-                        self.communication_command_send_list(connection)
-                    # Dismiss and item.
-                    elif command == "del":
-                        self.communication_command_delete(
-                            connection, data.split(":")[1]
-                        )
-                    elif command == "dels":
-                        self.communication_command_delete_similar(
-                            connection, data.split(":")[1]
-                        )
-                    elif command == "dela":
-                        self.communication_command_delete_apps(
-                            connection, data.split(":")[1]
-                        )
-                    # Saw an item, this sets the urgency to normal.
-                    elif command == "saw":
-                        self.communication_command_saw(connection, data.split(":")[1])
-                finally:
-                    # Clean up the connection
-                    connection.close()
-            except Exception:
-                if event.is_set():
-                    break
-        server.close()
-        os.unlink(self.socket_path)
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            server.bind(self.socket_path)
+            server.listen(1)
+            server.settimeout(1)
+            while 1:
+                try:
+                    connection, client_address = server.accept()
+                    self.update_queue()
+                    try:
+                        data = connection.recv(1024).decode("utf-8")
+                        command = data.split(":")[0]
+
+                        # Get number of notifications
+                        if command == "num":
+                            self.communication_command_num(connection)
+                        elif command == "list":
+                            self.communication_command_send_list(connection)
+                        elif command == "del":
+                            self.communication_command_delete(
+                                connection, data.split(":")[1]
+                            )
+                        elif command == "dels":
+                            self.communication_command_delete_similar(
+                                connection, data.split(":")[1]
+                            )
+                        elif command == "dela":
+                            self.communication_command_delete_apps(
+                                connection, data.split(":")[1]
+                            )
+                        elif command == "saw":
+                            self.communication_command_saw(
+                                connection, data.split(":")[1]
+                            )
+                    finally:
+                        connection.close()
+                except Exception:
+                    if event.is_set():
+                        break
+        finally:
+            server.close()
+            if os.path.exists(self.socket_path):
+                os.unlink(self.socket_path)
 
 
 """
