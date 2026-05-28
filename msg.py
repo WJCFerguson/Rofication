@@ -1,5 +1,7 @@
 import os
 import re
+import socket
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from enum import IntEnum
 
@@ -34,6 +36,14 @@ class Msg:
     @classmethod
     def from_dict(cls, d: dict) -> "Msg":
         return cls(**{k: v for k, v in d.items() if k in cls.__dataclass_fields__})
+
+
+@contextmanager
+def daemon_connection():
+    """Connect to the rofication daemon socket."""
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as client:
+        client.connect(SOCKET_PATH)
+        yield client
 
 
 def linesplit(sock):

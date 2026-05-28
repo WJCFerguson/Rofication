@@ -1,15 +1,12 @@
 #!/usr/bin/env python3
-import socket
 import sys
 
-from msg import SOCKET_PATH
+from msg import daemon_connection
 
-client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-client.connect(SOCKET_PATH)
-client.sendall(bytes("num", "utf-8"))
+with daemon_connection() as client:
+    client.sendall(bytes("num", "utf-8"))
+    val = client.recv(32).decode("utf-8")
 
-val = client.recv(32)
-val = val.decode("utf-8")
 l = val.split("\n", 2)
 num = int(l[0])
 if num:

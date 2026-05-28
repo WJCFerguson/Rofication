@@ -168,49 +168,45 @@ class Rofication(threading.Thread):
         if os.path.exists(self.socket_path):
             os.unlink(self.socket_path)
 
-        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        try:
+        with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as server:
             server.bind(self.socket_path)
             server.listen(1)
             server.settimeout(1)
-            while 1:
-                try:
-                    connection, client_address = server.accept()
-                    self.update_queue()
+            try:
+                while 1:
                     try:
-                        data = connection.recv(1024).decode("utf-8")
-                        command = data.split(":")[0]
+                        connection, client_address = server.accept()
+                        self.update_queue()
+                        with connection:
+                            data = connection.recv(1024).decode("utf-8")
+                            command = data.split(":")[0]
 
-                        # Get number of notifications
-                        if command == "num":
-                            self.communication_command_num(connection)
-                        elif command == "list":
-                            self.communication_command_send_list(connection)
-                        elif command == "del":
-                            self.communication_command_delete(
-                                connection, data.split(":")[1]
-                            )
-                        elif command == "dels":
-                            self.communication_command_delete_similar(
-                                connection, data.split(":")[1]
-                            )
-                        elif command == "dela":
-                            self.communication_command_delete_apps(
-                                connection, data.split(":")[1]
-                            )
-                        elif command == "saw":
-                            self.communication_command_saw(
-                                connection, data.split(":")[1]
-                            )
-                    finally:
-                        connection.close()
-                except Exception:
-                    if event.is_set():
-                        break
-        finally:
-            server.close()
-            if os.path.exists(self.socket_path):
-                os.unlink(self.socket_path)
+                            if command == "num":
+                                self.communication_command_num(connection)
+                            elif command == "list":
+                                self.communication_command_send_list(connection)
+                            elif command == "del":
+                                self.communication_command_delete(
+                                    connection, data.split(":")[1]
+                                )
+                            elif command == "dels":
+                                self.communication_command_delete_similar(
+                                    connection, data.split(":")[1]
+                                )
+                            elif command == "dela":
+                                self.communication_command_delete_apps(
+                                    connection, data.split(":")[1]
+                                )
+                            elif command == "saw":
+                                self.communication_command_saw(
+                                    connection, data.split(":")[1]
+                                )
+                    except Exception:
+                        if event.is_set():
+                            break
+            finally:
+                if os.path.exists(self.socket_path):
+                    os.unlink(self.socket_path)
 
 
 """

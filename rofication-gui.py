@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import json
-import socket
 import struct
 import subprocess
 
 from gi.repository import GLib
 
-from msg import SOCKET_PATH, Msg, Urgency, linesplit, strip_tags
+from msg import Msg, Urgency, daemon_connection, linesplit, strip_tags
 
 
 msg = """<span font-size='small'><i>Super+s</i>:    Dismiss notification.  <i>Super+Enter</i>:  Mark notification seen.\n"""
@@ -57,11 +56,9 @@ def call_rofi(entries, additional_args=[]):
 
 
 def send_command(cmd):
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(SOCKET_PATH)
-    print("Send: {cmd}".format(cmd=cmd))
-    client.send(bytes(cmd, "utf-8"))
-    client.close()
+    with daemon_connection() as client:
+        print("Send: {cmd}".format(cmd=cmd))
+        client.send(bytes(cmd, "utf-8"))
 
 
 did = None
@@ -69,36 +66,35 @@ cont = True
 first_time = True
 while cont:
     cont = False
-    client = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-    client.connect(SOCKET_PATH)
-    client.send(b"list", 4)
     ids = []
     entries = []
     index = 0
     urgent = []
     low = []
     args = []
-    for a in linesplit(client):
-        if len(a) > 0:
-            msg = Msg.from_dict(json.loads(a))
-            ids.append(msg)
-            mst = "<b>{summ}</b> <small>({app})</small>".format(
-                summ=GLib.markup_escape_text(strip_tags(msg.summary)),
-                app=GLib.markup_escape_text(strip_tags(msg.application)),
-            )
-            if len(msg.body) > 0:
-                mst += "\n<i>{}</i>".format(
-                    GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
+    with daemon_connection() as client:
+        client.send(b"list", 4)
+        for a in linesplit(client):
+            if len(a) > 0:
+                msg = Msg.from_dict(json.loads(a))
+                ids.append(msg)
+                mst = "<b>{summ}</b> <small>({app})</small>".format(
+                    summ=GLib.markup_escape_text(strip_tags(msg.summary)),
+                    app=GLib.markup_escape_text(strip_tags(msg.application)),
                 )
-            if msg.app_icon:
-                mst += "\0icon\x1f{app_icon}".format(app_icon=msg.app_icon)
+                if len(msg.body) > 0:
+                    mst += "\n<i>{}</i>".format(
+                        GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
+                    )
+                if msg.app_icon:
+                    mst += "\0icon\x1f{app_icon}".format(app_icon=msg.app_icon)
 
-            entries.append(mst)
-            if Urgency(msg.urgency) is Urgency.critical:
-                urgent.append(str(index))
-            if Urgency(msg.urgency) is Urgency.low:
-                low.append(str(index))
-            index += 1
+                entries.append(mst)
+                if Urgency(msg.urgency) is Urgency.critical:
+                    urgent.append(str(index))
+                if Urgency(msg.urgency) is Urgency.low:
+                    low.append(str(index))
+                index += 1
     if len(urgent):
         args.append("-u")
         args.append(",".join(urgent))
