@@ -43,21 +43,21 @@ class Rofication(threading.Thread):
         try:
             with open("not.json", "r") as f:
                 self.notification_queue = jsonpickle.decode(f.read())
-        except:
+        except Exception:
             pass
 
         for noti in self.notification_queue:
             noti.notid = -1
             if self.last_id < noti.mid:
                 self.last_id = int(noti.mid)
-        print("Found last id: {nid}".format(nid=nf._id))
+        print("Found last id: {nid}".format(nid=self.last_id))
 
     def save(self):
         print("Saving rofication")
         try:
             with open("not.json", "w") as f:
                 f.write(jsonpickle.encode(self.notification_queue))
-        except:
+        except Exception:
             print("Failed to store queue.")
 
     """
@@ -79,9 +79,9 @@ class Rofication(threading.Thread):
                 self.notification_queue.remove(no)
 
     def remove_notification(self, id):
-        printf("Removing: {}".format(id))
+        print("Removing: {}".format(id))
         with self.notification_queue_lock:
-            n = [n for n in self.notification_queue_lock if n.notid == id]
+            n = [n for n in self.notification_queue if n.notid == id]
             for no in n:
                 print("Closing: {id}:{sum}".format(id=no.mid, sum=no.application))
 
@@ -194,7 +194,7 @@ class Rofication(threading.Thread):
                 finally:
                     # Clean up the connection
                     connection.close()
-            except:
+            except Exception:
                 if event.is_set():
                     break
         server.close()
@@ -244,18 +244,18 @@ class NotificationFetcher(dbus.service.Object):
         "org.freedesktop.Notifications", in_signature="", out_signature="as"
     )
     def GetCapabilities(self):
-        return "body"
+        return ["body"]
 
     @dbus.service.signal("org.freedesktop.Notifications", signature="uu")
     def NotificationClosed(self, id_in, reason_in):
-        _rofication.remove_notification(id_in)
+        self._rofication.remove_notification(id_in)
         pass
 
     @dbus.service.method(
         "org.freedesktop.Notifications", in_signature="u", out_signature=""
     )
     def CloseNotification(self, id):
-        _rofication.remove_notification(id)
+        self._rofication.remove_notification(id)
         pass
 
     @dbus.service.method(
