@@ -29,17 +29,12 @@ def print_entries():
         for a in linesplit(client):
             if len(a) > 0:
                 msg = Msg.from_dict(json.loads(a))
-                mst = "<b>{summ}</b> <small>({app})</small>".format(
-                    summ=GLib.markup_escape_text(strip_tags(msg.summary)),
-                    app=GLib.markup_escape_text(strip_tags(msg.application)),
-                )
-                if len(msg.body) > 0:
-                    mst += "\n<i>{}</i>".format(
-                        GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
-                    )
-                mst += "\0info\x1f{id}".format(id=msg.mid)
+                mst = f"<b>{GLib.markup_escape_text(strip_tags(msg.summary))}</b> <small>({GLib.markup_escape_text(strip_tags(msg.application))})</small>"
+                if msg.body:
+                    mst += f"\n<i>{GLib.markup_escape_text(strip_tags(msg.body.replace(chr(10), ' ')))}</i>"
+                mst += f"\0info\x1f{msg.mid}"
                 if msg.app_icon:
-                    mst += "\x1ficon\x1f{app_icon}".format(app_icon=msg.app_icon)
+                    mst += f"\x1ficon\x1f{msg.app_icon}"
                 if Urgency(msg.urgency) is Urgency.critical:
                     mst += "\x1furgent\x1ftrue"
                 if Urgency(msg.urgency) is Urgency.low:
@@ -55,14 +50,11 @@ def print_entries():
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         retv = int(os.getenv("ROFI_RETV"))
+        mid = int(os.getenv("ROFI_INFO"))
         if retv == 1:
-            mid = int(os.getenv("ROFI_INFO"))
-            send_command("saw:{mid}".format(mid=mid))
+            send_command(f"saw:{mid}")
         elif retv == 10:
-            mid = int(os.getenv("ROFI_INFO"))
-            send_command("del:{mid}".format(mid=mid))
+            send_command(f"del:{mid}")
         elif retv == 11:
-            mid = int(os.getenv("ROFI_INFO"))
-            send_command("dels:{mid}".format(mid=mid))
-        pass
+            send_command(f"dels:{mid}")
     print_entries()

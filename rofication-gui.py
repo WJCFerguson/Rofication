@@ -43,12 +43,11 @@ def call_rofi(entries, additional_args=[]):
         rofi_command + additional_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE
     )
     for e in entries:
-        proc.stdin.write((e).encode("utf-8"))
+        proc.stdin.write(e.encode("utf-8"))
         proc.stdin.write(struct.pack("B", 3))
     proc.stdin.close()
     answer = proc.stdout.read().decode("utf-8")
     exit_code = proc.wait()
-    # trim whitespace
     if answer == "":
         return None, exit_code
     else:
@@ -57,7 +56,7 @@ def call_rofi(entries, additional_args=[]):
 
 def send_command(cmd):
     with daemon_connection() as client:
-        print("Send: {cmd}".format(cmd=cmd))
+        print(f"Send: {cmd}")
         client.send(bytes(cmd, "utf-8"))
 
 
@@ -78,16 +77,11 @@ while cont:
             if len(a) > 0:
                 msg = Msg.from_dict(json.loads(a))
                 ids.append(msg)
-                mst = "<b>{summ}</b> <small>({app})</small>".format(
-                    summ=GLib.markup_escape_text(strip_tags(msg.summary)),
-                    app=GLib.markup_escape_text(strip_tags(msg.application)),
-                )
-                if len(msg.body) > 0:
-                    mst += "\n<i>{}</i>".format(
-                        GLib.markup_escape_text(strip_tags(msg.body.replace("\n", " ")))
-                    )
+                mst = f"<b>{GLib.markup_escape_text(strip_tags(msg.summary))}</b> <small>({GLib.markup_escape_text(strip_tags(msg.application))})</small>"
+                if msg.body:
+                    mst += f"\n<i>{GLib.markup_escape_text(strip_tags(msg.body.replace(chr(10), ' ')))}</i>"
                 if msg.app_icon:
-                    mst += "\0icon\x1f{app_icon}".format(app_icon=msg.app_icon)
+                    mst += f"\0icon\x1f{msg.app_icon}"
 
                 entries.append(mst)
                 if Urgency(msg.urgency) is Urgency.critical:
@@ -95,10 +89,10 @@ while cont:
                 if Urgency(msg.urgency) is Urgency.low:
                     low.append(str(index))
                 index += 1
-    if len(urgent):
+    if urgent:
         args.append("-u")
         args.append(",".join(urgent))
-    if len(low):
+    if low:
         args.append("-a")
         args.append(",".join(low))
 
@@ -106,24 +100,20 @@ while cont:
         break
     first_time = False
 
-    # Select previous selected row.
-    if did != None:
+    if did is not None:
         args.append("-selected-row")
         args.append(str(did))
-    # Show rofi
     did, code = call_rofi(entries, args)
-    print("{a},{b}".format(a=did, b=code))
-    # Dismiss notification
-    if did != None and code == 10:
-        send_command("del:{mid}".format(mid=ids[did].mid))
+    print(f"{did},{code}")
+    if did is not None and code == 10:
+        send_command(f"del:{ids[did].mid}")
         cont = True
-    # Seen notification
-    elif did != None and code == 11:
-        send_command("saw:{mid}".format(mid=ids[did].mid))
+    elif did is not None and code == 11:
+        send_command(f"saw:{ids[did].mid}")
         cont = True
-    elif did != None and code == 12:
+    elif did is not None and code == 12:
         first_time = True
         cont = True
-    elif did != None and code == 13:
-        send_command("dela:{app}".format(app=ids[did].application))
+    elif did is not None and code == 13:
+        send_command(f"dela:{ids[did].application}")
         cont = True
